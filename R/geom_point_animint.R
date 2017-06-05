@@ -14,9 +14,10 @@ GeomPointAnimint <- ggplot2::ggproto("GeomPointAnimint", GeomPoint,
 
 #' @export
 geom_point_animint <- function (mapping = NULL, data = NULL, stat = "identity", position = "identity",
-                                ..., na.rm = FALSE, show.legend = NA, inherit.aes = TRUE){
+                                ..., na.rm = FALSE, showSelected = showSelected,
+                                show.legend = NA, inherit.aes = TRUE){
   
   ggplot2::layer(data = data, mapping = mapping, stat = stat, geom = GeomPointAnimint, 
         position = position, show.legend = show.legend, inherit.aes = inherit.aes, 
-        params = list(na.rm = na.rm, ...))
+        params = list(na.rm = na.rm, showSelected = list(showSelected), ...))
 }

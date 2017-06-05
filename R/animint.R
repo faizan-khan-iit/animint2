@@ -1391,8 +1391,8 @@ animint2dir <- function(plot.list, out.dir = tempfile(),
                paste(names(name.counts)[is.dup], collapse=", "))
         }
         if("showSelected" %in% names(L$mapping)){
-          warning("Please use showSelected as a parameter. Use of ",
-                  "showSelected as an aesthetic has been depriciated.")
+          stop("Please use showSelected as a parameter. Use of ",
+               "showSelected as an aesthetic has been removed.")
         }
         iaes <- selector.aes(L$mapping)
         one.names <- with(iaes, c(clickSelects$one, showSelected$one))
@@ -1459,6 +1459,10 @@ animint2dir <- function(plot.list, out.dir = tempfile(),
                                                    col.name)
           all.vals <- unlist(unique(df[[col.name]]))
           if(is_showSelected_or_clickSelects && !is.na(all.vals)){
+            if(length(all.vals) == 1){
+              df[[col.name]] <- data[[ all.vals ]]
+            }
+            # For more than one showSelected, use showSelected1, showSelected2..
             for(val.i in seq_along(all.vals)){
               df[[paste0(col.name, val.i)]] <- data[[ all.vals[[val.i]] ]]
             }
