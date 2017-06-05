@@ -346,7 +346,7 @@ saveLayer <- function(l, d, meta){
   meta$geom.count <- meta$geom.count + 1
   ## needed for when group, etc. is an expression:
   g$aes <- sapply(l$mapping, function(k) as.character(as.expression(k)))
-
+  g$aes <- c(g$aes, unlist(l$aes_params))
   ## use un-named parameters so that they will not be exported
   ## to JSON as a named object, since that causes problems with
   ## e.g. colour.
@@ -1390,6 +1390,10 @@ animint2dir <- function(plot.list, out.dir = tempfile(),
           stop("aes names must be unique, problems: ",
                paste(names(name.counts)[is.dup], collapse=", "))
         }
+        if("showSelected" %in% names(L$mapping)){
+          warning("Please use showSelected as a parameter. Use of ",
+                  "showSelected as an aesthetic has been depriciated.")
+        }
         iaes <- selector.aes(L$mapping)
         one.names <- with(iaes, c(clickSelects$one, showSelected$one))
         update.vars <- as.character(L$mapping[one.names])
@@ -1448,7 +1452,22 @@ animint2dir <- function(plot.list, out.dir = tempfile(),
       ## Data now contains columns with fill, alpha, colour etc.
       ## Remove from data if they have a single unique value and
       ## are NOT used in mapping to reduce tsv file size
+      
+      addShowSelectedData <- function(df, data, col.names){
+        for(col.name in names(df)){
+          is_showSelected_or_clickSelects <- grepl("showSelected",
+                                                   col.name)
+          all.vals <- unlist(unique(df[[col.name]]))
+          if(is_showSelected_or_clickSelects && !is.na(all.vals)){
+            for(val.i in seq_along(all.vals)){
+              df[[paste0(col.name, val.i)]] <- data[[ all.vals[[val.i]] ]]
+            }
+          }
+        }
+        df
+      }
       redundant.cols <- names(L$geom$default_aes)
+      df <- addShowSelectedData(df, L$data, redundant.cols)
       for(col.name in names(df)){
         if(col.name %in% redundant.cols){
           all.vals <- unique(df[[col.name]])
