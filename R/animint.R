@@ -346,7 +346,7 @@ saveLayer <- function(l, d, meta){
   meta$geom.count <- meta$geom.count + 1
   ## needed for when group, etc. is an expression:
   g$aes <- sapply(l$mapping, function(k) as.character(as.expression(k)))
-  g$aes <- c(g$aes, unlist(l$aes_params))
+  g$aes <- c(g$aes, unlist(l$geom_params))
   ## use un-named parameters so that they will not be exported
   ## to JSON as a named object, since that causes problems with
   ## e.g. colour.
@@ -814,10 +814,17 @@ saveLayer <- function(l, d, meta){
                   quote=FALSE, row.names=FALSE, sep="\t")
       bytes <- file.info(tmp)$size
       bytes.per.line <- bytes/nrow(some.lines)
+      
+      ## Just a hack to handle showSelected for now. Will be removed later
+      addAnimintParams <- function(colName){
+        gsub("showSelected", "animintParams.showSelected", colName)
+      }
       bad.chunk <- function(){
         if(all(!can.chunk))return(NULL)
         can.chunk.cols <- subset.vec[can.chunk]
+        names(g.data) <- sapply(names(g.data), addAnimintParams)
         maybe.factors <- g.data[, can.chunk.cols, drop=FALSE]
+        # maybe.factors <- sapply(maybe.factors, paste)
         for(N in names(maybe.factors)){
           maybe.factors[[N]] <- paste(maybe.factors[[N]])
         }
@@ -1453,25 +1460,22 @@ animint2dir <- function(plot.list, out.dir = tempfile(),
       ## Remove from data if they have a single unique value and
       ## are NOT used in mapping to reduce tsv file size
       
-      addShowSelectedData <- function(df, data, col.names){
-        for(col.name in names(df)){
-          is_showSelected_or_clickSelects <- grepl("showSelected",
-                                                   col.name)
-          all.vals <- unlist(unique(df[[col.name]]))
-          if(is_showSelected_or_clickSelects && !is.na(all.vals)){
-            if(length(all.vals) == 1){
-              df[[col.name]] <- data[[ all.vals ]]
-            }
-            # For more than one showSelected, use showSelected1, showSelected2..
-            for(val.i in seq_along(all.vals)){
-              df[[paste0(col.name, val.i)]] <- data[[ all.vals[[val.i]] ]]
-            }
+      addShowSelectedData <- function(df, data, showSelected_params){
+        if(!(is.null(showSelected_params))){
+          if(length(showSelected_params) == 1){
+            df[[paste0("showSelected")]] <- data[[ showSelected_params[[1]] ]]
+            return(df)
+          }
+          
+          # For more than one showSelected, use showSelected1, showSelected2..
+          for(val.i in seq_along(showSelected_params)){
+            df[[paste0("showSelected", val.i)]] <- data[[ showSelected_params[[val.i]] ]]
           }
         }
         df
       }
       redundant.cols <- names(L$geom$default_aes)
-      df <- addShowSelectedData(df, L$data, redundant.cols)
+      df <- addShowSelectedData(df, L$data, L$geom_params$animintParams$showSelected)
       for(col.name in names(df)){
         if(col.name %in% redundant.cols){
           all.vals <- unique(df[[col.name]])
